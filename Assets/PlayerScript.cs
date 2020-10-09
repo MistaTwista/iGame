@@ -2,12 +2,18 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.Video;
 
 public class PlayerScript : MonoBehaviour
 {
-    public float speed = 2000f;
     private Rigidbody2D rb;
-    private bool faseRight = true;
+    private bool faceRight = true;
+
+    [SerializeField] private GameObject tooltip;
+    [SerializeField] private TVScript tvScript;
+    [SerializeField] private float speed = 2000f;
+
+    private GameObject currentActionable;
 
     void Start()
     {
@@ -17,6 +23,7 @@ public class PlayerScript : MonoBehaviour
     void Update()
     {
         float moveX = Input.GetAxis("Horizontal");
+        PlayerOrientation(moveX);
         rb.MovePosition(rb.position + Vector2.right * moveX * speed * Time.deltaTime);
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -24,18 +31,51 @@ public class PlayerScript : MonoBehaviour
             rb.AddForce(Vector2.up * 8000);
         }
 
-        if (moveX > 0 && !faseRight)
+        if (Input.GetKeyDown(KeyCode.F) && currentActionable != null)
         {
-            flip();
-        } else if (moveX < 0 && faseRight)
-        {
-            flip();
+            Debug.Log("current != null");
+            IActionable actionable = currentActionable.GetComponent<IActionable>();
+            if (actionable != null)
+            {
+                Debug.Log("actionable.Action()");
+                actionable.Action();
+            }
         }
     }
 
-    void flip()
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        faseRight = !faseRight;
+        currentActionable = other.gameObject;
+        ITouchable touchable = currentActionable.GetComponent<ITouchable>();
+        if (touchable != null)
+        {
+            touchable.Touch();
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        ITouchable touchable = other.gameObject.GetComponent<ITouchable>();
+        if (touchable != null)
+        {
+            touchable.Untouch();
+        }
+    }
+
+    private void PlayerOrientation(float moveX)
+    {
+        if (moveX > 0 && !faceRight)
+        {
+            Flip();
+        } else if (moveX < 0 && faceRight)
+        {
+            Flip();
+        }
+    }
+
+    private void Flip()
+    {
+        faceRight = !faceRight;
         transform.localScale = new Vector3(transform.localScale.x * -1, transform.localScale.y, transform.localScale.z);
     }
 }
